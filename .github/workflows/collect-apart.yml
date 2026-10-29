@@ -1,0 +1,30 @@
+name: Automatyczny cennik skupu Mennicy Apart
+on:
+  schedule:
+    # Apart zwykle publikuje zmiany o XX:X2; uruchamiamy w kolejnych minutach.
+    # GitHub Actions może uruchomić workflow z opóźnieniem.
+    - cron: '4,14,24,34,44,54 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: zloto-taty-apart
+  cancel-in-progress: true
+jobs:
+  read-buyback-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Zainstaluj silnik przeglądarki
+        run: |
+          npm install --no-audit --no-fund --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Pobierz cennik i prześlij do Złota Taty
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          GOLD_API_URL: ${{ vars.GOLD_API_URL }}
+        run: node scripts/collect-apart.mjs
